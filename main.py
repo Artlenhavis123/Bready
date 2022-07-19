@@ -39,10 +39,11 @@ def main():
         service = build('calendar', 'v3', credentials=creds)
 
         # Call the Calendar API
-        now = datetime.datetime.now().isoformat() + 'Z'  # 'Z' indicates UTC time
+        now = datetime.datetime.now().replace(day=1).isoformat() + 'Z'  # 'Z' indicates UTC time
+
         print('Getting the upcoming 10 events')
         events_result = service.events().list(calendarId='primary', timeMin=now,
-                                              maxResults=100, singleEvents=True,
+                                              maxResults=10, singleEvents=True,
                                               orderBy='startTime').execute()
         events = events_result.get('items', [])
 
@@ -50,24 +51,32 @@ def main():
             print('No upcoming events found.')
             return
 
+        payrate = 10.55
+        tot_hours = 0
         # Prints the start and name of the next 10 events
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
             end = event['end'].get('dateTime', event['end'].get('date'))
-            tot_hours = 
             if event['summary'] == 'Work':
                 start = convertDate(start)
                 end = convertDate(end)
 
                 shift_len = end - start
-                tot_hours += shift_len
+                seconds = shift_len.seconds
+                hours = seconds//3600
 
-                start = start.strftime('%d/%m/%Y %I:%M %p')
+                tot_hours = tot_hours + hours
+
+                start = start.strftime('%d/%m/%Y %a %I:%M %p')
                 end = end.strftime("%I:%M %p")
 
                 print(f"{start} - {end}: {event['summary']}({shift_len})")
 
-            print(f"Total Hours: {tot_hours}")
+
+        print(f"Total Hours: {tot_hours}")
+        pay = tot_hours * payrate
+        pay = float("{0:.2f}".format(pay))
+        print(f"Planned Pay: {pay}")
 
     except HttpError as error:
         print('An error occurred: %s' % error)
